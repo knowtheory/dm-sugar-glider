@@ -7,7 +7,7 @@ begin
     gem.name = "dm-sugar-glider"
     gem.summary = %Q{TODO: one-line summary of your gem}
     gem.description = %Q{TODO: longer description of your gem}
-    gem.email = "ted.han@skein.us"
+    gem.email = "ted@knowtheory.net"
     gem.homepage = "http://github.com/knowtheory/dm-sugar-glider"
     gem.authors = ["Ted Han"]
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
