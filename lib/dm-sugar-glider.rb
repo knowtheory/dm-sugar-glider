@@ -13,10 +13,6 @@ require dir / 'query'
 require dir / 'query' / 'property_matcher'
 
 module DataMapper
-  class Collection
-    include SugarGlider::Collection
-  end
-  
   class Query
     include SugarGlider::Query
   end

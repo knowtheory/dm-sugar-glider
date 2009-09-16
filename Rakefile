@@ -10,6 +10,10 @@ begin
     gem.email = "ted@knowtheory.net"
     gem.homepage = "http://github.com/knowtheory/dm-sugar-glider"
     gem.authors = ["Ted Han"]
+    
+    # dependencies
+    gem.add_dependency 'dm-core', '>= 0.10'
+    gem.add_dependency 'extlib',  '>= 0.9.13'
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
 

@@ -3,14 +3,23 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 describe DataMapper::SugarGlider do
   # TODO: this module should be runnable against all the main dm-core specs.
   
-  describe "Querying" do
-    it "should let you use mixed conditions" do
+  describe "User Interface" do
+    it "should allow querying with mixed conditions" do
       original  = Human.all(:last_name => "Obama", :first_name => /a/)
       mixed     = Human.all(:last_name => "Obama"){ first_name =~ /a/}
       block     = Human.all{ last_name == "Obama";  first_name =~ /a/}
       mixed.query.should == original.query
       block.query.should == original.query
     end
+    
+    it "should allow chaining query blocks" do
+      Human.all{ last_name == "Obama"}.all{ first_name =~ /a/}.should == Human.all{ last_name == "Obama";  first_name =~ /a/}
+      # Human.any{ sex == "M" }.all{ first_name == "Barbra"; dob == "June 8, 1925" } == []
+    end
+  end
+  
+  describe "Query Construction" do
+    
   end
 end
 =begin
