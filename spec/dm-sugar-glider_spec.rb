@@ -1,5 +1,24 @@
 require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
+describe DataMapper do
+  describe DataMapper::Query do
+    describe "#dup" do
+      it "should return a result that is #== to the original" do
+        or_op = DataMapper::Query::Conditions::OrOperation.new
+        and_op = DataMapper::Query::Conditions::AndOperation.new
+          or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
+          or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+        and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
+        and_op << or_op
+        
+        q = DataMapper::Query.new(Human.repository,Human, :conditions=>and_op)
+        q.conditions.should == and_op
+        q.dup.should == q
+      end
+    end
+  end
+end
+
 describe DataMapper::SugarGlider do
   # TODO: this module should be runnable against all the main dm-core specs.
   
@@ -16,10 +35,27 @@ describe DataMapper::SugarGlider do
       Human.all{ last_name == "Obama"}.all{ first_name =~ /a/}.should == Human.all{ last_name == "Obama";  first_name =~ /a/}
       # Human.any{ sex == "M" }.all{ first_name == "Barbra"; dob == "June 8, 1925" } == []
     end
+    
+    describe "Model.any" do
+      it do 
+        women_and_barack = Human.any{ last_name == "Obama"; sex == "F" }
+        women = Human.all(:sex => "F")
+        obamas = Human.all(:last_name => "Obama")
+        (women_and_barack & women).should == women
+        (women_and_barack & obamas).should == obamas
+        (women_and_barack - women - obamas).should == []
+      end
+    end
   end
   
   describe "Query Construction" do
     
+  end
+  
+  describe "Querying Relationships" do
+    it "" do
+      Human.any{ pets.species == "Felis catus"; all{ first_name == "Barbra"; dob == "June 8, 1925" }}
+    end
   end
 end
 =begin
@@ -146,4 +182,53 @@ q2 = DataMapper::Query.new(Human.repository,Human,{:conditions=>DataMapper::Quer
 
 Human.all{ sex == "M" }.any{ last_name == "Obama"; last_name == "Clinton" }.query == 
 Human.all{ sex == "M"; any { last_name == "Obama"; last_name == "Clinton" } }.query
+
+# ==========================
+
+Human.all(DataMapper::Query.new(Human.repository, Human, {:links=>Human.pets.relationships}))
+
+# ========================== Fail during update to 10.0.1 :( :( :( :( :( :(
+
+or_op = DataMapper::Query::Conditions::OrOperation.new
+and_op = DataMapper::Query::Conditions::AndOperation.new
+  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
+  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
+and_op << or_op
+
+q = DataMapper::Query.new(Human.repository,Human, :conditions => and_op)
+
+q.update(DataMapper::Query.new(Human.repository,Human)) == q # true
+Human.all(q).query == q # FALSE FFS WHY IS THIS FALSE
+
+Human.send(:scoped_query, q) == q # also false D: D: D:
+
+q.dup == q # => false WHY?! WHY!? WHY!?
+
+# ==========================
+
+Pet.all{ species == "Felis catus"; humans == Human.first(:first_name => "William", :last_name =>"Clinton") }
+
+and_op = DataMapper::Query::Conditions::AndOperation.new
+and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Pet.species, "Canis Majoris")
+and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+
+q = DataMapper::Query.new(Pet.repository, Pet, {:conditions=>and_op})
+Pet.all(q)
+
+Pet.all(DataMapper::Query::Path.new([Pet.relationships[:humans]], :last_name) => "Clinton")
+
+# ============================ Query Validity
+
+or_op = DataMapper::Query::Conditions::OrOperation.new
+and_op = DataMapper::Query::Conditions::AndOperation.new
+#  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
+#  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
+and_op << or_op
+
+q = DataMapper::Query.new(Human.repository,Human, :conditions => and_op)
+
+Human.all(q)
+
 =end

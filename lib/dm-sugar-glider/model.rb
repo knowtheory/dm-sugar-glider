@@ -6,13 +6,13 @@ module DataMapper
       def self.extended(model)
         model.class_eval 'class QueryBlock < DataMapper::SugarGlider::Model::QueryBlock; end'
       end
-      
+
       def all(query={},&query_block)
         query_from_block = query_from(&query_block)
         query_from_options = scoped_query(query)
         super(query_from_options.merge(query_from_block))
       end
-      
+
       def any(query={},&query_block)
         query_from_block = query_from({:conditions=>DataMapper::Query::Conditions::Operation.new(:or)},&query_block)
         query_from_options = scoped_query(query)

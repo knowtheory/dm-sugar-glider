@@ -8,9 +8,12 @@ require 'dm-core/version'
 
 require dir / 'model'
 require dir / 'model' / 'property'
-require dir / 'model' / 'query'
+require dir / 'model' / 'query_block'
 require dir / 'query'
 require dir / 'query' / 'property_matcher'
+require dir / 'query' / 'relationship_matcher'
+require dir / 'relationship'
+require dir / 'support' / 'class_path'
 
 module DataMapper
   class Query

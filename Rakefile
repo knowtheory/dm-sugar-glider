@@ -21,8 +21,12 @@ rescue LoadError
   puts "Jeweler (or a dependency) not available. Install it with: sudo gem install jeweler"
 end
 
+require 'pathname'
+ROOT = Pathname(__FILE__).dirname.expand_path
+
 require 'spec/rake/spectask'
 Spec::Rake::SpecTask.new(:spec) do |spec|
+  spec.spec_opts << '--options' << ROOT + 'spec/spec.opts'
   spec.libs << 'lib' << 'spec'
   spec.spec_files = FileList['spec/**/*_spec.rb']
 end
