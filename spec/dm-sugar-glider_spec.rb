@@ -2,6 +2,49 @@ require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
 
 describe DataMapper do
   describe DataMapper::Query do
+    describe "Group" do
+      describe "Closure Axiom" do
+        # Closure must ensure that output of our method is ALWAYS a query
+        # if the arguments are two queries.
+        it "requires that TWO QUERIES ENTER, ONLY ONE QUERY LEAVES" do
+          q1 = DataMapper::Query.new(Human.repository,Human)
+          q2 = DataMapper::Query.new(Human.repository,Human)
+          q1.merge(q2).should be_kind_of(DataMapper::Query)
+          q2.merge(q1).should be_kind_of(DataMapper::Query)
+        end
+      end
+      
+      describe "Associative Axiom" do
+        before do
+          @condition1 = DataMapper::Query::Conditions::EqualToComparison.new(Human.sex, 'F')
+          @condition2 = DataMapper::Query::Conditions::RegexpComparison.new(Human.first_name, /a/)
+#          @condition3 = DataMapper::Query::Conditions::GreaterThanOrEqualComparison.new()
+#          @condition4 = DataMapper::Query::Conditions::
+#          @condition5 = DataMapper::Query::Conditions::
+#          @condition6 = DataMapper::Query::Conditions::
+        end
+      end
+      
+      describe "Identity Axiom" do
+        before do
+          @identity = DataMapper::Query.new(Human.repository,Human)
+          @query = DataMapper::Query.new(Human.repository,Human, {:first_name => /a/})
+          # Note: these tests should be run with a wide variety of Queries, with different attributes
+        end
+      
+        it "should not modify a query when merging into the Identity Query" do
+          @identity.merge(@query).should be_eql(@query)
+        end
+        
+        it "should not modify a query when the Identity Query is merged into it" do
+          @query.merge(@identity).should be_eql(@query)
+        end
+      end
+
+      describe "Inverse Axiom" do
+      end
+    end
+    
     describe "#dup" do
       it "should return a result that is #== to the original" do
         or_op = DataMapper::Query::Conditions::OrOperation.new
@@ -14,6 +57,30 @@ describe DataMapper do
         q = DataMapper::Query.new(Human.repository,Human, :conditions=>and_op)
         q.conditions.should == and_op
         q.dup.should == q
+      end
+    end
+    
+    describe "#merge" do
+      it do
+        conditions  = DataMapper::Query::Conditions::AndOperation.new 
+        conditions << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
+        query       = DataMapper::Query.new(Human.repository, Human, :conditions => conditions)
+        empty_query = DataMapper::Query.new(Human.repository, Human)
+        query.merge(empty_query).should == query
+        empty_query.merge(query).should == query
+      end
+
+      it "should suborn the query conditions from the latter query into the former query" do
+        op1 =  DataMapper::Query::Conditions::OrOperation.new
+        op1 << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
+
+        op2 =  DataMapper::Query::Conditions::AndOperation.new
+        op2 << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+        op2 << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
+        
+        q1 = DataMapper::Query.new(Human.repository,Human, :conditions=>op1) # => Obamas
+        q2 = DataMapper::Query.new(Human.repository,Human, :conditions=>op2) # => Bill Clinton
+        q1.merge(q2).conditions.should == DataMapper::Query::Conditions::AndOperation.new.merge([op1.dup, op2])
       end
     end
   end
@@ -32,8 +99,8 @@ describe DataMapper::SugarGlider do
     end
     
     it "should allow chaining query blocks" do
+      (Human.all{ last_name == "Obama"}.all{ first_name =~ /a/}).query.conditions.should == Human.all{ last_name == "Obama";  first_name =~ /a/}.query.conditions
       Human.all{ last_name == "Obama"}.all{ first_name =~ /a/}.should == Human.all{ last_name == "Obama";  first_name =~ /a/}
-      # Human.any{ sex == "M" }.all{ first_name == "Barbra"; dob == "June 8, 1925" } == []
     end
     
     describe "Model.any" do
@@ -199,7 +266,7 @@ and_op << or_op
 q = DataMapper::Query.new(Human.repository,Human, :conditions => and_op)
 
 q.update(DataMapper::Query.new(Human.repository,Human)) == q # true
-Human.all(q).query == q # FALSE FFS WHY IS THIS FALSE
+Human.all(q).query == q # FALSE FFS WHY IS THIS FALSE.  No longer false yay!
 
 Human.send(:scoped_query, q) == q # also false D: D: D:
 
@@ -222,8 +289,8 @@ Pet.all(DataMapper::Query::Path.new([Pet.relationships[:humans]], :last_name) =>
 
 or_op = DataMapper::Query::Conditions::OrOperation.new
 and_op = DataMapper::Query::Conditions::AndOperation.new
-#  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
-#  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
+  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Obama")
+  or_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.last_name, "Clinton")
 and_op << DataMapper::Query::Conditions::Comparison.new(:eql, Human.sex, "M")
 and_op << or_op
 
